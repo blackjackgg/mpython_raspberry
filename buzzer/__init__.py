@@ -108,8 +108,7 @@ class BuzzerPlayer(object):
         t = tune()
         if not tempo:
             tempo = next(t)
-        print("tempo",tempo)    
-        #self.play_tune(tempo, t, transpose=transpose, name=name)
+        self.play_tune(tempo, t, transpose=transpose, name=name)
 
     def tone(self, freq, duration=0, duty=30):
         self.buzzer_pin.freq(int(freq))
@@ -122,33 +121,34 @@ class BuzzerPlayer(object):
         if callable(self.callback):
             self.callback(freq)
             
-#     def play_tune(self, tempo, tune, transpose=0, name="unknown"):
-#         print("\n== playing '%s' ==:" % name)
-#         print(tempo)
-#         full_notes_per_second = float(tempo) / 60 / 4
-#         full_note_in_samples = SAMPLING_RATE / full_notes_per_second
-#         for note_pitch, note_duration in tune:
-#             print(note_pitch, note_duration)
-#             duration = int(full_note_in_samples / note_duration)
-#             if note_pitch == "r":
-#                 self.tone(0, duration, 0)
-#             else:
-#                 freq = note_freq(note_pitch)
-#                 if transpose: freq *= 2 ** transpose
-#                 print("%s " % note_pitch, end="")
-#                 self.tone(freq, duration, 30)
-#                 
-#         self.tone(0, 0, 0)
+    def play_tune(self, tempo, tune, transpose=0, name="unknown"):
 
-#     if MidiFile:
-#         def play_midi(self, filename, track=1,  transpose=6):
-#             midi = MidiFile(filename)
-#             tune = midi.read_track(track)
-#             self.play_tune(midi.tempo, tune, transpose=transpose, name=filename)
-# 
-#     if RTTTL:
-#         def play_rtttl(self, input):
-#             tune = RTTTL(input)    
-#             for freq, msec in tune.notes():
-#                 self.tone(freq, msec)
+        print("\n== playing '%s' ==:" % name)
+        full_notes_per_second = float(tempo) / 60 / 4
+        full_note_in_samples = SAMPLING_RATE / full_notes_per_second
+
+        for note_pitch, note_duration in tune:
+            duration = int(full_note_in_samples / note_duration)
+
+            if note_pitch == "r":
+                self.tone(0, duration, 0)
+            else:
+                freq = note_freq(note_pitch)
+                if transpose: freq *= 2 ** transpose
+                print("%s " % note_pitch, end="")
+                self.tone(freq, duration, 30)
+                
+        self.tone(0, 0, 0)
+
+    if MidiFile:
+        def play_midi(self, filename, track=1,  transpose=6):
+            midi = MidiFile(filename)
+            tune = midi.read_track(track)
+            self.play_tune(midi.tempo, tune, transpose=transpose, name=filename)
+
+    if RTTTL:
+        def play_rtttl(self, input):
+            tune = RTTTL(input)    
+            for freq, msec in tune.notes():
+                self.tone(freq, msec)
 
