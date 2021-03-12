@@ -1,11 +1,14 @@
 """Stuff to parse WAVE files.
+
 Usage.
+
 Reading WAVE files:
       f = wave.open(file, 'r')
 where file is either the name of a file or an open file pointer.
 The open file pointer must have methods read(), seek(), and close().
 When the setpos() and rewind() methods are not used, the seek()
 method is not  necessary.
+
 This returns an instance of a class with the following public methods:
       getnchannels()  -- returns number of audio channels (1 for
                          mono, 2 for stereo)
@@ -31,11 +34,13 @@ are compatible and have nothing to do with the actual position in the
 file.
 The close() method is called automatically when the class instance
 is destroyed.
+
 Writing WAVE files:
       f = wave.open(file, 'w')
 where file is either the name of a file or an open file pointer.
 The open file pointer must have methods write(), tell(), seek(), and
 close().
+
 This returns an instance of a class with the following public methods:
       setnchannels(n) -- set the number of channels
       setsampwidth(n) -- set the sample width
@@ -88,6 +93,7 @@ _wave_params = namedtuple('_wave_params',
 
 class Wave_read:
     """Variables used in this class:
+
     These variables are available to the user though appropriate
     methods of this class:
     _file -- the open file with methods read(), close(), and seek()
@@ -107,6 +113,7 @@ class Wave_read:
     _soundpos -- the position in the audio stream
               available through the tell() method, set through the
               setpos() method
+
     These variables are used internally only:
     _fmt_chunk_read -- 1 iff the FMT chunk has been read
     _data_seek_needed -- 1 iff positioned correctly in audio
@@ -256,6 +263,7 @@ class Wave_read:
 
 class Wave_write:
     """Variables used in this class:
+
     These variables are user settable through appropriate methods
     of this class:
     _file -- the open file with methods write(), close(), tell(), seek()
@@ -272,6 +280,7 @@ class Wave_write:
               set through the setframerate() or setparams() method
     _nframes -- the number of audio frames written to the header
               set through the setnframes() or setparams() method
+
     These variables are used internally only:
     _datalength -- the size of the audio samples written to the header
     _nframeswritten -- the number of frames actually written
