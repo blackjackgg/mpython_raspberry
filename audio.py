@@ -1,4 +1,5 @@
 import machine
+from machine import ADC
 import utime
 import array
 from ulab import numpy
@@ -6,107 +7,103 @@ import wave
 import struct
 import socket
 import _thread
-print("haha")
+from machine import Timer
+
 
 print("ok")
-pcmarray = array.array("H",[0 for x in range(5001)])
-
-wavef = wave.open('22.wav','wb')
+wavef = wave.open('qq.wav','wb')
 wavef.setnchannels(1)
 wavef.setsampwidth(2)
-wavef.setframerate(2000)
-print("wwww")
-def wavSetOyt(outpath,pcmarray,rate):
+caiyangrate = int(48 * 1000) # 人声 800hz  录音机用8000 采样率高于原来频率两倍就可以采样还原出来
+framerate  =  (1 / (caiyangrate) )*1000 * 1000 * 100 #  这里是固定1600 
+voiceup = 5 # 声音增益倍数  倍数太大声音直接没了！！ 调高检测阈值 使用放大倍数
+wavef.setframerate(framerate )
 
-    
-#     for val in  pcmarray:
-#         val = round(float(val))
-#         datastruct = struct.pack('<h',val)
-    wavef.writeframesraw(pcmarray)
-    
-    
+micpin = machine.Pin(34,machine.Pin.IN)
+print(micpin.value())
+print(micpin.value())
+mic = machine.ADC(micpin)
+mic.atten(machine.ADC.ATTN_11DB)
+mic.width(ADC.WIDTH_12BIT)
 
-# 每次采样的频率都不是固定的 0v-5v 默认是12bit
+mctimer = Timer(1)
+pccount = 0
+pcmarray = array.array('H',[])
+
+
+def savewav(data):
+    datastruct = struct.pack('h',data) # 普通记录用i 不行改h
+    wavef.writeframesraw(datastruct)
+
+#每次采样的频率都不是固定的 0v-5v 默认是12bit
+    # 需要调麦克风灵敏度 蓝色方块上面的旋钮
+    
+def micread(timer):
+    global mic
+    global pcmarray
+    global mctimer
+    global pccount
+    
+    data = (mic.read()  * 16 ) - 32767 # 校正值
+    savewav(data * 10)
+    
+    if pccount > 4798:
+        print("跳出")
+        mctimer.deinit()
+    else:
+        pccount+=1
+        
+
 
 def micsample():
+    # 读取麦克风callback函数
+    global mic
     global pcmarray
-    micpin = machine.Pin(32,machine.Pin.IN)
-    mic = machine.ADC(micpin)
-    mic.atten(machine.ADC.ATTN_11DB)
-    mic.width(machine.ADC.WIDTH_12BIT)
-    #默认是12bit的数据
+    global mctimer
+    global pccount
     
-    mic16 = mic.read() 
-    print(mic16)
+    data = (mic.read()  * 16 ) - 32767 # 校正值  16位 2^16 取中间值
+    pcmarray.append(data * voiceup) # 声音波形放大
+    us = int( (1 / (caiyangrate * 2) )*1000 * 1000)
+    utime.sleep_us(us)   # 间隔的秒数 = (1 / (采样频率 * 2) )*1000 * 1000
+#     savewav(data * 10)
     
-   
-#     start = utime.ticks_us()
-#     for i in range(16000):
-#         outpath =""
-#         recvarray=  struct.pack('<h',mic.read()*1024)
-#         wavSetOyt(outpath,recvarray,777)
-#     end = utime.ticks_us()
-#     duration = end - start
-#     rate = 5000 /(duration/1000/1000)
-#     print("rate",rate)
-
-#     
-#     socketcp = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-#     socketcp.connect(("0.0.0.0",60000))
-#     socketcp.sendall(pcmarray)
+#     startime = utime.ticks_us()
+#     mctimer.init(mode=machine.Timer.PERIODIC,callback=micread,freq=4000)
+#     while pccount  < 4798: # 设置一共采样多久
+#         continue
     
     
 
 
-# def tcplink(conn,addr):
-#     recv = b''
-#     print("aaa")
-#     while 1:
-#         data = conn.recv(1000)
-#         if not data:
-#             break
-#         recv += data
-#         print(recv)
-#         if len(recv) < 3202:
-#             continue
-#         # 转换
-#         print("wtf")
-#         recvarray = numpy.frombuffer(recv[0:3202],"uint16")
-#         print("ok")
-#         rate = recvarray[1600]
-#         pcmdate12bit = recvarray[0:1600]
-#         
-#         pcmdate12bitf = pcmdate12bit.astype(numpy.float32)
-#         pcmdate16bitf =  pcmdate12bitf * 16
-#         pcmdate16bitf2 =  pcmdate16bitf  - 3276
-#         
-#         outpath = "C:\\Users\\Administrator\\Desktop\\1.wav"
-#         wavSetOyt(outpath ,pcmdate16bitf2,rate )
-#     print("shutdown")    
-#     conn.close()
-#         
-# socketcp = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-# socketcp.bind(("0.0.0.0",60000))
-# socketcp.listen(100)
+#     endtime = utime.ticks_us()
+#     duration = endtime - startime
+#     rate = 16000 /(duration/1000/1000)
 
-# while 1:
-#     print("start")
-start = utime.ticks_us()
+
+#     mic16 = (mic.read()  * 16 ) - 32767
+#     print(mic16)
+
+start = utime.ticks_ms()
 while 1:
-    micsample()
     end = utime.ticks_us()
-    duration = end - start
-    if duration > 300000000 * 1:
+    if utime.ticks_diff(utime.ticks_ms(), start) > 5000 *1:
         wavef.writeframes(b"")
-        wavef.close()
-        print("jiesu")
+        print("jiesusample")
         break
-#     conn,addr =socketcp.accept()
-#     print(conn,addr)
-#     _thread.start_new_thread(tcplink,(conn,addr))
-#     print("run")
+    micsample()
+# print(pcmarray)
 
-
-
-        
-    
+for i in pcmarray:  
+    savewav(i)
+# 保存文件单独处理 不然采样率跟不上！
+print("end")
+wavef.close()
+# def micsample2():
+#     #默认是12bit的数据
+#     print(mic.read())
+# while 1:
+#   micsample2()
+#   utime.sleep(1)
+# 往左边旋转调高阈值  使得灯刚好暗掉 稍微说话灯就能亮
+       
